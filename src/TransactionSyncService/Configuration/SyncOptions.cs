@@ -23,7 +23,7 @@ public sealed class SyncOptions
 
     public string AuthToken { get; set; } = string.Empty;
 
-    public PayloadFormat DefaultPayloadFormat { get; set; } = PayloadFormat.Json;
+    public PayloadFormat DefaultPayloadFormat { get; set; } = PayloadFormat.Xml;
 
     [MinLength(1)]
     public List<TableSyncDefinition> Tables { get; set; } = [];
@@ -40,10 +40,9 @@ public sealed class TableSyncDefinition
     [Required]
     public string WatermarkColumn { get; set; } = string.Empty;
 
-    [MinLength(1)]
-    public List<string> Columns { get; set; } = [];
-
     public string Route { get; set; } = "api/inbox/records";
+
+    public bool Enabled { get; set; } = true;
 
     public PayloadFormat? PayloadFormat { get; set; }
 }

@@ -3,12 +3,12 @@ namespace TransactionSyncCentralApi.Models;
 public sealed class RecordEnvelope
 {
     public required string SourceTable { get; init; }
+    public required string SourceQuery { get; init; }
     public required string PrimaryKeyValue { get; init; }
     public required DateTime WatermarkUtc { get; init; }
     public required string Fingerprint { get; init; }
     public required PayloadFormat PayloadFormat { get; init; }
     public required string Payload { get; init; }
-    public required Dictionary<string, object?> Data { get; init; }
 }
 
 public sealed class StoreResult

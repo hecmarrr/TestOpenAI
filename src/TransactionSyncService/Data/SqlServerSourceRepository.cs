@@ -16,9 +16,8 @@ public sealed class SqlServerSourceRepository(IOptions<SyncOptions> options) : I
         int batchSize,
         CancellationToken cancellationToken)
     {
-        var columns = string.Join(", ", table.Columns.Select(SqlIdentifier.QuoteIdentifier));
         var sql = $"""
-            SELECT TOP (@BatchSize) {columns}
+            SELECT TOP (@BatchSize) *
             FROM {SqlIdentifier.QuoteTableName(table.TableName)}
             WHERE (
                 @LastWatermarkUtc IS NULL
@@ -47,6 +46,7 @@ public sealed class SqlServerSourceRepository(IOptions<SyncOptions> options) : I
             records.Add(new OutboundRecord
             {
                 TableName = table.TableName,
+                SourceQuery = BuildSourceQuery(table, data),
                 PrimaryKeyValue = Convert.ToString(data[table.PrimaryKeyColumn]) ?? string.Empty,
                 WatermarkValueUtc = EnsureUtc(Convert.ToDateTime(data[table.WatermarkColumn])),
                 Data = data
@@ -69,4 +69,11 @@ public sealed class SqlServerSourceRepository(IOptions<SyncOptions> options) : I
 
     private static DateTime EnsureUtc(DateTime value) =>
         value.Kind == DateTimeKind.Utc ? value : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+
+    private static string BuildSourceQuery(TableSyncDefinition table, IReadOnlyDictionary<string, object?> data)
+    {
+        var primaryKeyValue = Convert.ToString(data[table.PrimaryKeyColumn]) ?? string.Empty;
+        var quotedPk = primaryKeyValue.Replace("'", "''");
+        return $"SELECT * FROM {table.TableName} WHERE {table.PrimaryKeyColumn} = '{quotedPk}'";
+    }
 }

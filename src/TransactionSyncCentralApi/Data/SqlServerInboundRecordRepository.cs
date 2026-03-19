@@ -19,6 +19,7 @@ public sealed class SqlServerInboundRecordRepository(IOptions<CentralApiOptions>
                 (
                     Id BIGINT IDENTITY(1,1) PRIMARY KEY,
                     SourceTable NVARCHAR(256) NOT NULL,
+                    SourceQuery NVARCHAR(MAX) NOT NULL,
                     PrimaryKeyValue NVARCHAR(256) NOT NULL,
                     WatermarkUtc DATETIME2 NOT NULL,
                     Fingerprint CHAR(64) NOT NULL,
@@ -27,6 +28,12 @@ public sealed class SqlServerInboundRecordRepository(IOptions<CentralApiOptions>
                     ReceivedAtUtc DATETIME2 NOT NULL,
                     CONSTRAINT UX_IntegrationInbox_Fingerprint UNIQUE (Fingerprint)
                 );
+            END;
+
+            IF COL_LENGTH('dbo.IntegrationInbox', 'SourceQuery') IS NULL
+            BEGIN
+                ALTER TABLE dbo.IntegrationInbox
+                ADD SourceQuery NVARCHAR(MAX) NOT NULL CONSTRAINT DF_IntegrationInbox_SourceQuery DEFAULT ('');
             END;
             """;
 
@@ -37,8 +44,8 @@ public sealed class SqlServerInboundRecordRepository(IOptions<CentralApiOptions>
             """;
 
         const string insertSql = """
-            INSERT INTO dbo.IntegrationInbox (SourceTable, PrimaryKeyValue, WatermarkUtc, Fingerprint, PayloadFormat, Payload, ReceivedAtUtc)
-            VALUES (@SourceTable, @PrimaryKeyValue, @WatermarkUtc, @Fingerprint, @PayloadFormat, @Payload, @ReceivedAtUtc);
+            INSERT INTO dbo.IntegrationInbox (SourceTable, SourceQuery, PrimaryKeyValue, WatermarkUtc, Fingerprint, PayloadFormat, Payload, ReceivedAtUtc)
+            VALUES (@SourceTable, @SourceQuery, @PrimaryKeyValue, @WatermarkUtc, @Fingerprint, @PayloadFormat, @Payload, @ReceivedAtUtc);
 
             SELECT CAST(SCOPE_IDENTITY() AS BIGINT);
             """;
@@ -64,6 +71,7 @@ public sealed class SqlServerInboundRecordRepository(IOptions<CentralApiOptions>
         var id = await connection.ExecuteScalarAsync<long>(new CommandDefinition(insertSql, new
         {
             envelope.SourceTable,
+            envelope.SourceQuery,
             envelope.PrimaryKeyValue,
             envelope.WatermarkUtc,
             envelope.Fingerprint,

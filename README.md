@@ -1,6 +1,6 @@
 # TransactionSyncService
 
-Solución completa en C# para mover registros transaccionales desde **SQL Server local** hacia una **base SQL Server centralizada** usando **REST** entre ambos extremos.
+Solución completa en C# para mover registros transaccionales desde **SQL Server local** hacia una **base SQL Server centralizada** usando **REST**, transmitiendo cada registro en **XML**.
 
 Incluye dos componentes:
 
@@ -12,17 +12,17 @@ Incluye dos componentes:
 ### 1) Emisor (`TransactionSyncService`)
 
 - Lee varias tablas configuradas.
+- Ejecuta la extracción de forma dinámica con `SELECT * FROM <tabla>`.
 - Usa `watermark + primary key` como cursor para reanudación segura.
-- Serializa cada fila a JSON o XML.
-- Envuelve cada fila en un `RecordEnvelope`.
+- Construye un sobre XML que incluye la tabla, la consulta origen y el registro.
 - Envía cada registro al API central usando `X-Idempotency-Key`.
 - Mantiene estado local en SQL Server (`SyncDeliveryLog` y `SyncCheckpoint`).
 
 ### 2) Receptor (`TransactionSyncCentralApi`)
 
 - Expone `POST /api/inbox/records`.
-- Recibe el `RecordEnvelope`.
-- Guarda el payload recibido en la tabla central `IntegrationInbox`.
+- Recibe el XML del `SyncEnvelope`.
+- Guarda el XML recibido en la tabla central `IntegrationInbox`.
 - Evita duplicados con un `UNIQUE` por `Fingerprint`.
 
 ## Cómo se evita la duplicidad
@@ -50,7 +50,7 @@ Archivo: `src/TransactionSyncService/appsettings.json`
 - `RestEndpoint`: URL base del API central.
 - `BatchSize`: tamaño del lote.
 - `PollingIntervalSeconds`: frecuencia de consulta.
-- `Tables`: tablas a leer.
+- `Tables`: configuración de tablas a replicar.
 
 Ejemplo:
 
@@ -59,10 +59,32 @@ Ejemplo:
   "TableName": "dbo.Facturas",
   "PrimaryKeyColumn": "IdFactura",
   "WatermarkColumn": "FechaUltimaActualizacion",
-  "Columns": [ "IdFactura", "Serie", "Numero", "Total", "FechaUltimaActualizacion" ],
   "Route": "api/inbox/records",
-  "PayloadFormat": "Json"
+  "Enabled": true,
+  "PayloadFormat": "Xml"
 }
+```
+
+## Formato XML transmitido
+
+Cada envío se transmite como XML, por ejemplo:
+
+```xml
+<SyncEnvelope>
+  <sourceTable>dbo.Facturas</sourceTable>
+  <sourceQuery><![CDATA[SELECT * FROM dbo.Facturas WHERE IdFactura = '123']]></sourceQuery>
+  <primaryKeyValue>123</primaryKeyValue>
+  <watermarkUtc>2026-03-19T10:00:00.0000000Z</watermarkUtc>
+  <fingerprint>...</fingerprint>
+  <payloadFormat>Xml</payloadFormat>
+  <record>
+    <Record table="dbo.Facturas" primaryKey="123" watermarkUtc="2026-03-19T10:00:00.0000000Z">
+      <IdFactura>123</IdFactura>
+      <Serie>A</Serie>
+      <Total>150.00</Total>
+    </Record>
+  </record>
+</SyncEnvelope>
 ```
 
 ## Configuración del API central

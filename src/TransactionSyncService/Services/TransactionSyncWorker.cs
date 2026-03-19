@@ -25,7 +25,7 @@ public sealed class TransactionSyncWorker(
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            foreach (var table in _options.Tables)
+            foreach (var table in _options.Tables.Where(x => x.Enabled))
             {
                 try
                 {
@@ -45,12 +45,12 @@ public sealed class TransactionSyncWorker(
     {
         var cursor = await _deliveryStateRepository.GetCursorAsync(table.TableName, cancellationToken);
         var records = await _sourceRepository.ReadPendingAsync(table, cursor, _options.BatchSize, cancellationToken);
-        var payloadFormat = table.PayloadFormat ?? _options.DefaultPayloadFormat;
+        var payloadFormat = PayloadFormat.Xml;
 
         foreach (var record in records)
         {
-            var payload = record.Serialize(payloadFormat);
             var fingerprint = record.ComputeFingerprint(payloadFormat);
+            var payload = record.Serialize(payloadFormat, fingerprint);
 
             if (await _deliveryStateRepository.HasDeliveredFingerprintAsync(table.TableName, fingerprint, cancellationToken))
             {
@@ -61,12 +61,12 @@ public sealed class TransactionSyncWorker(
             var envelope = new RecordEnvelope
             {
                 SourceTable = table.TableName,
+                SourceQuery = record.SourceQuery,
                 PrimaryKeyValue = record.PrimaryKeyValue,
                 WatermarkUtc = record.WatermarkValueUtc,
                 Fingerprint = fingerprint,
                 PayloadFormat = payloadFormat,
-                Payload = payload,
-                Data = new Dictionary<string, object?>(record.Data, StringComparer.OrdinalIgnoreCase)
+                Payload = payload
             };
 
             try
