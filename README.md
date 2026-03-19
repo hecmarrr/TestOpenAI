@@ -24,6 +24,7 @@ Incluye dos componentes:
 - Recibe el XML del `SyncEnvelope`.
 - Guarda el XML recibido en la tabla central `IntegrationInbox`.
 - Evita duplicados con un `UNIQUE` por `Fingerprint`.
+- Expone Swagger en `/swagger` para documentar y probar el endpoint REST.
 
 ## Cómo se evita la duplicidad
 
@@ -105,6 +106,12 @@ dotnet run --project src/TransactionSyncService
 
 ```bash
 dotnet run --project src/TransactionSyncCentralApi
+```
+
+Swagger:
+
+```text
+https://localhost:<puerto>/swagger
 ```
 
 ## Publicación del servicio de Windows
