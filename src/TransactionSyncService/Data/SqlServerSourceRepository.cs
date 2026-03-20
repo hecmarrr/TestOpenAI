@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using TransactionSyncService.Configuration;
@@ -16,25 +17,17 @@ public sealed class SqlServerSourceRepository(IOptions<SyncOptions> options) : I
         int batchSize,
         CancellationToken cancellationToken)
     {
-        var sql = $"""
-            SELECT TOP (@BatchSize) *
-            FROM {SqlIdentifier.QuoteTableName(table.TableName)}
-            WHERE (
-                @LastWatermarkUtc IS NULL
-                OR {SqlIdentifier.QuoteIdentifier(table.WatermarkColumn)} > @LastWatermarkUtc
-                OR (
-                    {SqlIdentifier.QuoteIdentifier(table.WatermarkColumn)} = @LastWatermarkUtc
-                    AND CONVERT(NVARCHAR(256), {SqlIdentifier.QuoteIdentifier(table.PrimaryKeyColumn)}) > @LastPrimaryKeyValue
-                )
-            )
-            ORDER BY {SqlIdentifier.QuoteIdentifier(table.WatermarkColumn)}, {SqlIdentifier.QuoteIdentifier(table.PrimaryKeyColumn)};
-            """;
-
         var records = new List<OutboundRecord>();
 
         await using var connection = new SqlConnection(_options.SourceConnectionString);
         await connection.OpenAsync(cancellationToken);
-        await using var command = new SqlCommand(sql, connection);
+        await using var command = new SqlCommand(_options.SourceReadProcedure, connection)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+        command.Parameters.AddWithValue("@TableName", table.TableName);
+        command.Parameters.AddWithValue("@PrimaryKeyColumn", table.PrimaryKeyColumn);
+        command.Parameters.AddWithValue("@WatermarkColumn", table.WatermarkColumn);
         command.Parameters.AddWithValue("@BatchSize", batchSize);
         command.Parameters.AddWithValue("@LastWatermarkUtc", (object?)cursor.LastWatermarkUtc ?? DBNull.Value);
         command.Parameters.AddWithValue("@LastPrimaryKeyValue", (object?)cursor.LastPrimaryKeyValue ?? DBNull.Value);

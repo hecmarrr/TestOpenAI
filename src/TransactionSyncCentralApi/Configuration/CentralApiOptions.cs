@@ -8,4 +8,7 @@ public sealed class CentralApiOptions
 
     [Required]
     public string ConnectionString { get; set; } = string.Empty;
+
+    [Required]
+    public string StoreInboxProcedure { get; set; } = "dbo.sp_Sync_StoreIntegrationInbox";
 }

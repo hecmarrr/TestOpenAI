@@ -49,6 +49,10 @@ Archivo: `src/TransactionSyncService/appsettings.json`
 - `SourceConnectionString`: base transaccional.
 - `LocalStateConnectionString`: base local para checkpoints y bitácora de entregas.
 - `RestEndpoint`: URL base del API central.
+- `SourceReadProcedure`: procedimiento almacenado que obtiene registros pendientes.
+- `StateGetCursorProcedure`: procedimiento almacenado para leer el checkpoint.
+- `StateHasFingerprintProcedure`: procedimiento almacenado para validar duplicidad local.
+- `StateUpsertProcedure`: procedimiento almacenado para registrar entregas y actualizar checkpoint.
 - `BatchSize`: tamaño del lote.
 - `PollingIntervalSeconds`: frecuencia de consulta.
 - `Tables`: configuración de tablas a replicar.
@@ -93,6 +97,23 @@ Cada envío se transmite como XML, por ejemplo:
 Archivo: `src/TransactionSyncCentralApi/appsettings.json`
 
 - `CentralApi:ConnectionString`: cadena de conexión a la base SQL Server centralizada.
+- `CentralApi:StoreInboxProcedure`: procedimiento almacenado que inserta/valida el inbox central.
+
+## Scripts SQL por base de datos
+
+Se agregó la carpeta `database-scripts/` con scripts separados según la base:
+
+- `database-scripts/source-db/`: procedimientos almacenados para lectura de tablas origen.
+- `database-scripts/local-state-db/`: tablas y procedimientos del estado local del servicio.
+- `database-scripts/central-db/`: tablas y procedimientos del API central.
+
+Orden sugerido de ejecución:
+
+1. Ejecutar scripts de `source-db` en la base transaccional.
+2. Ejecutar scripts de `local-state-db` en la base usada por `LocalStateConnectionString`.
+3. Ejecutar scripts de `central-db` en la base centralizada.
+
+> Antes de iniciar el worker o el API, estos scripts deben existir en sus respectivas bases de datos.
 
 ## Ejecución local
 

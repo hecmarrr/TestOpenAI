@@ -21,6 +21,18 @@ public sealed class SyncOptions
     [Required]
     public string RestEndpoint { get; set; } = string.Empty;
 
+    [Required]
+    public string SourceReadProcedure { get; set; } = "dbo.sp_Sync_GetPendingRecords";
+
+    [Required]
+    public string StateGetCursorProcedure { get; set; } = "dbo.sp_Sync_GetCheckpoint";
+
+    [Required]
+    public string StateHasFingerprintProcedure { get; set; } = "dbo.sp_Sync_HasDeliveredFingerprint";
+
+    [Required]
+    public string StateUpsertProcedure { get; set; } = "dbo.sp_Sync_UpsertDeliveryState";
+
     public string AuthToken { get; set; } = string.Empty;
 
     public PayloadFormat DefaultPayloadFormat { get; set; } = PayloadFormat.Xml;
