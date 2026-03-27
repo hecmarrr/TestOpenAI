@@ -1,5 +1,4 @@
 using Microsoft.OpenApi.Models;
-using SqlProcedureDeployer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,13 +8,11 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "SQL Script Upload API",
+        Title = "SQL File API",
         Version = "v1",
-        Description = "Servicio REST para cargar archivos SQL de procedimientos y permitir que otro aplicativo los consuma."
+        Description = "Servicio REST con un método para devolver un archivo SQL de ejemplo."
     });
 });
-
-builder.Services.AddSingleton<ISqlScriptStore, InMemorySqlScriptStore>();
 
 var app = builder.Build();
 
