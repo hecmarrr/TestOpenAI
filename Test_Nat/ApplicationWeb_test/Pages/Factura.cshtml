@@ -1,0 +1,36 @@
+﻿@page
+@model ApplicationWeb_test.Pages.FacturaModel
+@{
+  
+}
+<label>Documento</label>
+<br />
+<br />
+<br />
+<a class="btn btn-primary btn-sm" href="/Detalle/Crear">Agregar</a>
+<button onclick="@Url.Action("Factura","AgregarDetalle")"></button>
+<form method="post">
+    <input asp-for="Factura.documento" placeholder="Documento" />
+    <input asp-for="Detalle.item" placeholder="Item" />
+    <button type="submit">AgregarItem</button>
+</form>
+<table class="table">
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>Material</th>
+        <th>Cantidad</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Factura.detalle)
+        {
+            <tr>
+                <td>@item.id</td>
+                <td>@item.item</td>
+                <td>@item.cantidad</td>
+            </tr>
+        }
+    </tbody>
+</table>
+

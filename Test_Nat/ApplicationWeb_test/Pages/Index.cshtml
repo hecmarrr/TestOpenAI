@@ -1,0 +1,11 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+
+@{
+    Html.Label("Documento");
+    Html.TextBoxFor(m => m.documento, new { @class = "form-control", placeholder = "Enter Name" });
+}
